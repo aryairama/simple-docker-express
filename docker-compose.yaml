@@ -1,0 +1,47 @@
+version: "3.9"
+networks:
+  app-network:
+    driver: 'bridge'
+services:
+  mysqldb:
+    image: mysql:latest
+    restart: always
+    env_file: ./.env
+    environment:
+      MYSQL_ROOT_PASSWORD: $MYSQL_ROOT_PASSWORD
+      MYSQL_DATABASE: $MYSQL_DATABASE
+    ports:
+      - $MYSQL_LOCAL_PORT:$MYSQL_DOCKER_PORT
+    networks:
+      - app-network
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      timeout: 45s
+      interval: 10s
+      retries: 10
+    # volumes:
+    #   - db-config:/usr/src/database/mysql/config
+    #   - db-data:/usr/src/database/mysql/data
+    #   - ./db/backup/files/:/usr/src/database/mysql/backup
+  app:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    env_file: ./.env
+    environment:
+      NODE_LOCAL_PORT: $NODE_LOCAL_PORT
+      NODE_DOCKER_PORT: $NODE_DOCKER_PORT
+    ports:
+      - $NODE_LOCAL_PORT:$NODE_DOCKER_PORT
+    stdin_open: true
+    tty: true
+    networks:
+      - app-network
+    depends_on:
+      mysqldb:
+        condition: service_healthy
+    entrypoint: [ "/bin/bash", "./migrate.sh" ]
+
+# volumes:
+#   db-config:
+#   db-data:
