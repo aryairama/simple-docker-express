@@ -41,6 +41,18 @@ services:
       mysqldb:
         condition: service_healthy
     entrypoint: [ "/bin/bash", "./migrate.sh" ]
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    restart: always
+    ports:
+      - '8080:80'
+    environment:
+      PMA_HOST: mysqldb
+    networks:
+      - app-network
+    depends_on:
+      mysqldb:
+        condition: service_healthy
 
 # volumes:
 #   db-config:
